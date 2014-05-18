@@ -1,20 +1,123 @@
-# Reproducible Research: Peer Assessment 1
+Title
+========================================================
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **Help** toolbar button for more details on using R Markdown).
+
+When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 
-## Loading and preprocessing the data
+**Loading and preprocessing the data**
+
+Show any code that is needed to
+
+- Load the data (i.e. read.csv())
+```{r}
+library(lattice)
+activity <-read.csv('activity.csv');
+```
+
+- Process/transform the data (if necessary) into a format suitable for your analysis
+
+```{r}
+meanActivity<-aggregate(steps~interval, activity, mean)
+```
+**What is mean total number of steps taken per day?**
+
+*For this part of the assignment, you can ignore the missing values in the dataset.*
+
+- Make a histogram of the total number of steps taken each day:
+```{r}
+hist(activity$steps);
+```
 
 
+- Calculate and report the mean and median total number of steps taken per day:
+```{r}
+meanActivity
+```
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
+```{r}
+aggregate( steps~date, activity, median)
+```
 
 
+**What is the average daily activity pattern?**
 
-## Are there differences in activity patterns between weekdays and weekends?
+-Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r fig.width=7, fig.height=6}
+plot(aggregate( steps~interval, activity, mean ))
+```
+
+-Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r fig.width=7, fig.height=6}
+
+maxNumberOfSteps <- max(meanActivity$steps);
+meanActivity$interval[meanActivity$steps==maxNumberOfSteps]
+```
+
+**Imputing missing values**
+
+*Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.*
+
+- Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+sum(is.na(activity$steps))
+```
+
+- Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+completeActivity<-activity
+for(i in 1:length(completeActivity$steps)){
+  if(is.na(completeActivity[i,'steps'])){
+    completeActivity[i,'steps'] = round(meanActivity[meanActivity$interval == completeActivity[i,'interval'],'steps'])
+  }
+}
+```
+
+
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r}
+hist(completeActivity$steps);
+aggregate(steps~interval, completeActivity, mean)
+aggregate( steps~date, completeActivity, median)
+```
+
+Lets compare mean and median total number of steps:
+
+- *NA values were filled with mean values for missing periods*
+
+- *Inputed values does differ from the estimates from the first part of the assignment, since missing values are filledand mean values are changed:*
+```{r}
+all.equal(aggregate(steps~interval, completeActivity, mean), aggregate(steps~interval, activity, mean))
+```
+
+- *Ther is no impact of imputing missing data on the estimates of the total daily number of steps and median values are changed:*
+```{r}
+all.equal(aggregate(steps~interval, completeActivity, median), aggregate(steps~interval, activity, median))
+```
+
+
+**Are there differences in activity patterns between weekdays and weekends?**
+
+*For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.*
+
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+
+```{r}
+weekend_days<-c("Saturday","Sunday")
+
+completeActivity$day_type<-(ifelse((weekdays(as.Date(completeActivity[,'date'])) %in% weekend_days), 'weekend','weekday'))
+                            
+xyplot(steps~interval|day_type=="weekend", data=completeActivity, type = "l")                            
+```
+
+As we can notice from the graps, there is more activity in the morning hours and in the evening over the weekday comparing to weekends. On the other side, there are more activity in the afternoon over the weekends. 
+
+This can be explaind by the later weakening over the weekends.
+
